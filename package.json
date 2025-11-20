@@ -1,0 +1,19 @@
+{
+  "name": "organizerdossies",
+  "version": "1.0.0",
+  "description": "",
+  "main": "code.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/code.js",
+    "dev": "tsc && node dist/code.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3"
+  }
+}
