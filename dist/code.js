@@ -1,143 +1,117 @@
-"use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-const fs = __importStar(require("fs"));
-const path = __importStar(require("path"));
+import * as fs from 'fs/promises';
+import * as path from 'path';
 const caminhoOrigem = 'C:/Users/Brenocp/Desktop/ORIGEM';
 const caminhoDestino = 'C:/Users/Brenocp/Desktop/DESTINO';
-// Função para ler os diretórios
-function lerDiretorio(caminho) {
-    try {
-        const itens = fs.readdirSync(caminho);
-        return itens;
-    }
-    catch (error) {
-        console.error(`❌ Erro ao ler o diretório ${caminho}:`, error);
-        return [];
-    }
-}
-// Função para listar dossiês em um diretório (pastas)
-function listarDossies(caminho) {
-    // Lê o conteúdo do diretório especificado e filtra apenas as pastas
-    try {
-        const dossies = lerDiretorio(caminho).filter((item) => {
-            const caminhoCompleto = path.join(caminho, item);
-            return fs.statSync(caminhoCompleto).isDirectory();
-        });
-        return dossies;
-    }
-    catch (error) {
-        console.error('Erro ao ler o diretório:', error);
-        return [];
-    }
-}
-// Função para listar arquivos em um diretório (sem pastas)
-function listarArquivos(caminho) {
-    // Lê o conteúdo do diretório especificado e filtra apenas os arquivos
-    try {
-        let arquivos = lerDiretorio(caminho).filter((item) => {
-            let caminhoCompleto = path.join(caminho, item);
-            return fs.statSync(caminhoCompleto).isFile();
-        });
-        return arquivos;
-    }
-    catch (error) {
-        console.error('Erro ao ler o diretório:', error);
-        return [];
-    }
-}
-// Função para mover arquivos para os dossiês correspondentes
-function moverArquivoParaDossie(caminhoOrigem, caminhoDestino, arquivosOrigem, dossiesDestino) {
-    // Inicializa contadores para arquivos movidos e não movidos
-    let movidos = 0;
-    let naoMovidos = 0;
-    // Percorre os dossiês vendo se tem algum arquivo com nome correspondente
-    dossiesDestino.forEach((dossie) => {
-        const arquivosCorrespondentes = arquivosOrigem.filter((arquivo) => {
-            return arquivo.includes(dossie);
-        });
-        const dossiesOrigem = lerDiretorio(caminhoOrigem).filter((dossieOrigem) => {
-            let caminhoCompleto = path.join(caminhoOrigem, dossieOrigem);
-            return fs.statSync(caminhoCompleto).isDirectory();
-        });
-        const dossiesCorrespondentes = dossiesOrigem.filter((dossieOrigem) => {
-            return dossieOrigem.includes(dossie);
-        });
-        // Se não existir arquivos ele para (return)
-        if (arquivosCorrespondentes.length === 0 && dossiesCorrespondentes.length === 0)
-            return;
-        // Garante que a pasta de destino exista
-        const pastaDestino = path.join(caminhoDestino, dossie);
-        if (!fs.existsSync(pastaDestino)) {
-            fs.mkdirSync(pastaDestino);
+// Classe para leitura de diretórios
+class leituraDiretorio {
+    // Método para listagem de itens em um diretório
+    async listarDiretorio(caminho) {
+        try {
+            const itens = await fs.readdir(caminho, { withFileTypes: true });
+            return itens;
         }
-        // Percorre os arquivos da origem correspondentes movendo-os para o destino.
-        arquivosCorrespondentes.forEach((arquivo) => {
-            const caminhoArquivoOrigem = path.join(caminhoOrigem, arquivo);
-            const caminhoDossieDestino = path.join(caminhoDestino, dossie, arquivo);
-            try {
-                // Move o arquivo.
-                fs.renameSync(caminhoArquivoOrigem, caminhoDossieDestino);
-                console.log(`Arquivo ${arquivo} movido para o dossiê ${dossie}`);
-                movidos++;
-            }
-            catch (error) {
-                console.error(`Erro ao mover o arquivo ${arquivo} para o dossiê ${dossie}:`, error);
-                naoMovidos++;
-            }
-        });
-        // Percorre os dossies da origem movendo-os para o destino
-        dossiesCorrespondentes.forEach((dossieOrigem) => {
-            const caminhoDossieOrigem = path.join(caminhoOrigem, dossie);
-            const caminhoDossieDestino = path.join(caminhoDestino, dossie, dossieOrigem);
-            try {
-                fs.renameSync(caminhoDossieOrigem, caminhoDossieDestino);
-                console.log(`Dossiê ${dossieOrigem} movido para dossiê: ${dossie}`);
-            }
-            catch (error) {
-                console.log(error);
-            }
-        });
-    });
+        catch (error) {
+            console.error(`❌ Erro ao ler o diretório ${caminho}:`, error);
+            return [];
+        }
+    }
+    // Método para listar apenas arquivos em um diretório
+    async listarArquivos(caminho) {
+        try {
+            const arquivos = await this.listarDiretorio(caminho);
+            // Filtra utilizando o objeto Dirent e retorna apenas os nomes dos arquivos
+            return arquivos.filter((arquivo) => arquivo.isFile()).map((arquivo) => arquivo.name);
+        }
+        catch (error) {
+            console.error(`❌ Erro ao listar arquivos no diretório ${caminho}:`, error);
+            return [];
+        }
+    }
+    // Método para listar apenas dossiês (diretórios) em um diretório
+    async listarDossies(caminho) {
+        try {
+            const dossies = await this.listarDiretorio(caminho);
+            // Filtra utilizando o objeto Dirent e retorna apenas os nomes dos diretórios
+            return dossies.filter((dossie) => dossie.isDirectory()).map((dossie) => dossie.name);
+        }
+        catch (error) {
+            console.error(`❌ Erro ao listar dossiês no diretório ${caminho}:`, error);
+            return [];
+        }
+    }
 }
-// Chamada da função
-const arquivosOrigem = listarArquivos(caminhoOrigem);
-const arquivosDestino = listarArquivos(caminhoDestino);
-console.log('Arquivos encontrados:', 'Origem:', arquivosOrigem, 'Destino:', arquivosDestino);
-const dossiesOrigem = listarDossies(caminhoOrigem);
-const dossiesDestino = listarDossies(caminhoDestino);
-console.log('Dossiês encontrados:', 'Origem:', dossiesOrigem, 'Destino:', dossiesDestino);
-moverArquivoParaDossie(caminhoOrigem, caminhoDestino, arquivosOrigem, dossiesDestino);
+// Classe para mover itens entre diretórios
+class moverItens {
+    // Método para mover arquivos para dossiês correspondentes
+    async moverArquivo(caminhoOrigem, caminhoDestino, arquivosOrigem, dossiesDestino) {
+        // Verifica se tem arquivos e dossiês para processar
+        if (arquivosOrigem.length === 0 || dossiesDestino.length === 0)
+            return false;
+        // Itera sobre cada dossiê de destino e filtra os arquivos correspondentes
+        for (const dossieDestino of dossiesDestino) {
+            const arquivosCorrespondentes = arquivosOrigem.filter((arquivo) => {
+                return arquivo.includes(dossieDestino);
+            });
+            if (arquivosCorrespondentes.length === 0)
+                return false;
+            // Move cada arquivo correspondente para o dossiê de destino
+            for (const arquivo of arquivosCorrespondentes) {
+                const caminhoArquivoOrigem = path.join(caminhoOrigem, arquivo);
+                const caminhoArquivoDestino = path.join(caminhoDestino, dossieDestino, arquivo);
+                try {
+                    await fs.rename(caminhoArquivoOrigem, caminhoArquivoDestino);
+                    console.log(`Arquivo: ${arquivo} movido para dossiê: ${dossieDestino}`);
+                }
+                catch (error) {
+                    console.log(error);
+                }
+            }
+            ;
+        }
+        ;
+        return true;
+    }
+    // Método para mover dossiês para dossiês correspondentes
+    async moverDossies(caminhoOrigem, caminhoDestino, dossiesOrigem, dossiesDestino) {
+        // Verifica se tem dossiês para processar
+        if (dossiesOrigem.length === 0 || dossiesDestino.length === 0)
+            return false;
+        // Itera sobre cada dossiê de destino e filtra os dossiês correspondentes
+        for (const dossieDestino of dossiesDestino) {
+            const dossiesCorrespondentes = dossiesOrigem.filter((dossieOrigem) => {
+                return dossieOrigem.includes(dossieDestino);
+            });
+            if (dossiesCorrespondentes.length === 0)
+                return false;
+            for (const dossie of dossiesCorrespondentes) {
+                const caminhoDossieOrigem = path.join(caminhoOrigem, dossie);
+                const caminhoDossieDestino = path.join(caminhoDestino, dossieDestino, dossie);
+                try {
+                    await fs.rename(caminhoDossieOrigem, caminhoDossieDestino);
+                    console.log(`Dossiê: ${dossie} movido para dossiê: ${dossieDestino}`);
+                }
+                catch (error) {
+                    console.log(error);
+                }
+            }
+        }
+        ;
+        return true;
+    }
+    // Método para mover todos os itens (arquivos e dossiês)
+    async moverTudo(caminhoOrigem, caminhoDestino, arquivosOrigem, dossiesOrigem, dossiesDestino) {
+        await this.moverArquivo(caminhoOrigem, caminhoDestino, arquivosOrigem, dossiesDestino);
+        await this.moverDossies(caminhoOrigem, caminhoDestino, dossiesOrigem, dossiesDestino);
+        return true;
+    }
+}
+const leitor = new leituraDiretorio();
+const mover = new moverItens();
+const arquivosOrigem = await leitor.listarArquivos(caminhoOrigem);
+console.log(arquivosOrigem);
+const dossiesOrigem = await leitor.listarDossies(caminhoOrigem);
+console.log(dossiesOrigem);
+const dossiesDestino = await leitor.listarDossies(caminhoDestino);
+console.log(dossiesDestino);
+mover.moverTudo(caminhoOrigem, caminhoDestino, arquivosOrigem, dossiesOrigem, dossiesDestino);
 //# sourceMappingURL=code.js.map
